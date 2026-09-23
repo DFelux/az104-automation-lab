@@ -1,0 +1,31 @@
+# Diese Datei zeigt nur das SCHEMA von config.local.ps1 und darf mit Platzhaltern
+# eingecheckt werden. Deine echte config.local.ps1 (mit deiner Subscription-ID)
+# bleibt lokal und wird durch .gitignore vom Commit ausgeschlossen.
+#
+# Einrichtung:
+#   1. Kopiere diese Datei zu "config.local.ps1"
+#   2. Trage deine echte SubscriptionId ein: (Get-AzContext).Subscription.Id
+#   3. Rufe Skripte mit -ConfigPath .\config.local.ps1 auf
+
+$Az104 = @{
+    SubscriptionId       = "00000000-0000-0000-0000-000000000000"
+    Location             = "germanywestcentral"
+    Environment          = "lab"
+    Project              = "az104"
+    ResourceGroupName    = "rg-az104-lab-gwc"
+    VnetName             = "vnet-az104-lab-gwc"
+    VnetAddressPrefix    = "10.10.0.0/16"
+    WorkloadSubnetName   = "snet-workload"
+    WorkloadSubnetPrefix = "10.10.1.0/24"
+    StorageAccountName   = "staz104labgwc001"
+    VmName               = "vm-az104-lab-01"
+    VmSize               = "Standard_B2s"
+}
+
+$Az104Tags = @{
+    Project     = $Az104.Project
+    Environment = $Az104.Environment
+    Owner       = "DF"
+    Purpose     = "AZ-104 learning lab"
+    ManagedBy   = "PowerShell"
+}
