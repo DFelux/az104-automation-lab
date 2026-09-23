@@ -1,8 +1,6 @@
 # az104-automation-lab
 Idempotente PowerShell/Az-Skripte für eine AZ-104-Übungsumgebung in Azure – Resource Group, VNet, Storage, RBAC, VM (ohne öffentliche IP) und Monitoring. Mit -WhatIf-Unterstützung, Tagging und dokumentiertem Troubleshooting realer Azure-/PowerShell-Probleme.
 
-# AZ-104 PowerShell-Blaupausen
-
 Diese Sammlung ist ein sicherer Ausgangspunkt fuer eine persoenliche AZ-104-Lernumgebung. Die Skripte sind absichtlich modular und wiederholbar: bereits vorhandene Ressourcen werden normalerweise nicht veraendert.
 
 ## Einmal vorbereiten
