@@ -1,3 +1,7 @@
+# az104-automation-lab
+
+Idempotente PowerShell/Az-Skripte für eine AZ-104-Übungsumgebung in Azure – Resource Group, VNet, Storage, RBAC, VM (ohne öffentliche IP) und Monitoring. Mit `-WhatIf`-Unterstützung, Tagging und dokumentiertem Troubleshooting realer Azure-/PowerShell-Probleme.
+
 Diese Sammlung ist ein sicherer Ausgangspunkt fuer eine persoenliche AZ-104-Lernumgebung. Die Skripte sind absichtlich modular und wiederholbar: bereits vorhandene Ressourcen werden normalerweise nicht veraendert.
 
 ## Architektur
@@ -7,14 +11,16 @@ graph TD
     RG["Resource Group<br/>rg-az104-lab-gwc<br/>(germanywestcentral)"]
     RG --> VNET["VNet<br/>vnet-az104-lab-gwc<br/>10.10.0.0/16"]
     VNET --> SNET["Subnet<br/>snet-workload<br/>10.10.1.0/24"]
+    VNET --> SNET2["Subnet (optional)<br/>via 02b-add-subnet.ps1<br/>z.B. snet-mgmt"]
     RG --> ST["Storage Account<br/>staz104labgwc001"]
     RG --> VM["VM (optional)<br/>vm-az104-lab-01<br/>keine öffentliche IP"]
     SNET --> VM
     RG --> LAW["Log Analytics Workspace<br/>(optional)"]
     RG -. RBAC-Zuweisung .-> PRINCIPAL["Entra-Prinzipal<br/>(optional)"]
+    RG -.-> PIP["Public IP (optional, eigenständig)<br/>via 07-public-ip.ps1<br/>nicht mit VM verbunden"]
 ```
 
-Alle Ressourcen liegen in derselben Resource Group und tragen ein einheitliches Tag-Set (`Project`, `Environment`, `Owner`, `Purpose`, `ManagedBy`). Die VM erhält bewusst keine öffentliche IP-Adresse; Zugriff erfolgt ausschließlich innerhalb des VNets bzw. optional per RBAC-Rollenzuweisung auf Ressourcengruppen-Ebene.
+Alle Ressourcen liegen in derselben Resource Group und tragen ein einheitliches Tag-Set (`Project`, `Environment`, `Owner`, `Purpose`, `ManagedBy`). Die VM erhält bewusst keine öffentliche IP-Adresse; Zugriff erfolgt ausschließlich innerhalb des VNets bzw. optional per RBAC-Rollenzuweisung auf Ressourcengruppen-Ebene. Die Public-IP-Erstellung (`07-public-ip.ps1`) ist bewusst eigenständig gehalten und wird nicht automatisch an die VM angehängt – sie dient separaten Übungen (z.B. Bastion, Load Balancer, NAT Gateway).
 
 ## Einmal vorbereiten
 
@@ -28,10 +34,12 @@ Alle Skripte akzeptieren `-ConfigPath`; ohne Angabe wird die eingecheckte `confi
 
 1. `.\01-resource-group.ps1 -ConfigPath .\config.local.ps1`
 2. `.\02-networking.ps1 -ConfigPath .\config.local.ps1`
+   - Optional weitere Subnets: `.\02b-add-subnet.ps1 -ConfigPath .\config.local.ps1 -SubnetName "snet-mgmt" -AddressPrefix "10.10.2.0/24"`
 3. `.\03-storage.ps1 -ConfigPath .\config.local.ps1`
 4. Optional RBAC: `.\04-identity-rbac.ps1 -ConfigPath .\config.local.ps1 -PrincipalObjectId '<Entra-Objekt-ID>' -Role Reader`
 5. Optional VM: `.\05-virtual-machine.ps1 -ConfigPath .\config.local.ps1 -LocalAdminCredential (Get-Credential)`
 6. Optional Monitoring: `.\06-monitoring.ps1 -ConfigPath .\config.local.ps1`
+7. Optional Public IP (eigenständig, z.B. für Bastion/Load Balancer-Übungen): `.\07-public-ip.ps1 -ConfigPath .\config.local.ps1 -PublicIpName "pip-test-01"`
 
 Vorschau ohne Aenderungen: jedes Erstellungsskript mit `-WhatIf` aufrufen. Die VM erhaelt absichtlich **keine oeffentliche IP-Adresse**. Das vermeidet eine versehentlich direkt aus dem Internet erreichbare Lern-VM.
 
