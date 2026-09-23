@@ -1,5 +1,21 @@
 Diese Sammlung ist ein sicherer Ausgangspunkt fuer eine persoenliche AZ-104-Lernumgebung. Die Skripte sind absichtlich modular und wiederholbar: bereits vorhandene Ressourcen werden normalerweise nicht veraendert.
 
+## Architektur
+
+```mermaid
+graph TD
+    RG["Resource Group<br/>rg-az104-lab-gwc<br/>(germanywestcentral)"]
+    RG --> VNET["VNet<br/>vnet-az104-lab-gwc<br/>10.10.0.0/16"]
+    VNET --> SNET["Subnet<br/>snet-workload<br/>10.10.1.0/24"]
+    RG --> ST["Storage Account<br/>staz104labgwc001"]
+    RG --> VM["VM (optional)<br/>vm-az104-lab-01<br/>keine öffentliche IP"]
+    SNET --> VM
+    RG --> LAW["Log Analytics Workspace<br/>(optional)"]
+    RG -. RBAC-Zuweisung .-> PRINCIPAL["Entra-Prinzipal<br/>(optional)"]
+```
+
+Alle Ressourcen liegen in derselben Resource Group und tragen ein einheitliches Tag-Set (`Project`, `Environment`, `Owner`, `Purpose`, `ManagedBy`). Die VM erhält bewusst keine öffentliche IP-Adresse; Zugriff erfolgt ausschließlich innerhalb des VNets bzw. optional per RBAC-Rollenzuweisung auf Ressourcengruppen-Ebene.
+
 ## Einmal vorbereiten
 
 1. Installiere das Az-Modul: `Install-Module Az -Scope CurrentUser`
