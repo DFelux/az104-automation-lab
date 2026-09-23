@@ -1,3 +1,4 @@
+Markdown
 # ☁️ AZ-104 Automation Lab (Azure & PowerShell)
 
 ![Azure](https://img.shields.io/badge/azure-%230072C6.svg?style=for-the-badge&logo=microsoftazure&logoColor=white)
@@ -19,39 +20,68 @@ Dieses Repository dient als praxisnahe Lernumgebung und demonstriert saubere Wor
  ├── 💻 Virtual Machine (No Public IP / Secure Access)
  ├── 🔑 Identity & RBAC (Role Assignments / Least Privilege)
  └── 📊 Log Analytics Workspace (Azure Monitor)
+🎯 Abgedeckte AZ-104 Domänen & Features
+Identity & Governance: Granulare RBAC-Zuweisungen (04-identity-rbac.ps1), automatisiertes Resource Tagging und strukturierte Ressourcengruppen-Verwaltung.
 
+Storage Accounts: Programmatische Erstellung von Azure Storage inkl. Security Best Practices wie erzwungenem TLS 1.2 (03-storage.ps1).
 
-## Einmal vorbereiten
+Compute & Networking: VNet-, Subnet- und VM-Provisionierung. Security-by-Design: Die VM erhält absichtlich keine öffentliche IP-Adresse (02-networking.ps1, 05-virtual-machine.ps1), um den Zugriff im Enterprise-Umfeld über VPN, Bastion oder Jump-Hosts zu simulieren.
 
-1. Installiere das Az-Modul: `Install-Module Az -Scope CurrentUser`
-2. Kopiere `config.ps1` zu `config.local.ps1` und trage dort deine echte Subscription-ID ein (z.B. per `(Get-AzContext).Subscription.Id`). `config.local.ps1` ist in `.gitignore` eingetragen und wird nie eingecheckt – `config.ps1` bleibt eine Vorlage ohne persoenliche Werte.
-3. Melde dich an und waehle die Subscription: `.\00-connect-and-context.ps1 -ConfigPath .\config.local.ps1`
+Monitoring: Erstellung und Konfiguration eines zentralen Log Analytics Workspaces für Diagnosedaten und Log-Analyse (06-monitoring.ps1).
 
-Alle Skripte akzeptieren `-ConfigPath`; ohne Angabe wird die eingecheckte `config.ps1`-Vorlage geladen (mit Platzhalter-Subscription-ID, das wird fehlschlagen). Fuer den taeglichen Gebrauch also immer `-ConfigPath .\config.local.ps1` mitgeben, oder ganz oben im eigenen `config.local.ps1` alles so eintragen, wie du es brauchst.
+⚙️ Vorbereitung & Sicherheit
+Az-Modul installieren:
 
-## Empfohlene Reihenfolge
+PowerShell
+Install-Module Az -Scope CurrentUser
+Lokale Konfiguration anlegen:
+Kopiere die Vorlage config.ps1 zu config.local.ps1 und trage dort deine echte Subscription-ID ein (z. B. ermittelbar über (Get-AzContext).Subscription.Id).
 
-1. `.\01-resource-group.ps1 -ConfigPath .\config.local.ps1`
-2. `.\02-networking.ps1 -ConfigPath .\config.local.ps1`
-3. `.\03-storage.ps1 -ConfigPath .\config.local.ps1`
-4. Optional RBAC: `.\04-identity-rbac.ps1 -ConfigPath .\config.local.ps1 -PrincipalObjectId '<Entra-Objekt-ID>' -Role Reader`
-5. Optional VM: `.\05-virtual-machine.ps1 -ConfigPath .\config.local.ps1 -LocalAdminCredential (Get-Credential)`
-6. Optional Monitoring: `.\06-monitoring.ps1 -ConfigPath .\config.local.ps1`
+PowerShell
+Copy-Item .\config.ps1 .\config.local.ps1
+🔒 Security Note: config.local.ps1 ist in .gitignore eingetragen und wird nicht im Repository eingecheckt. Das verhindert das versehentliche Veröffentlichen von vertraulichen Parametern oder Subscription-IDs.
 
-Vorschau ohne Aenderungen: jedes Erstellungsskript mit `-WhatIf` aufrufen. Die VM erhaelt absichtlich **keine oeffentliche IP-Adresse**. Das vermeidet eine versehentlich direkt aus dem Internet erreichbare Lern-VM.
+🚀 Ausführung & Deployment-Reihenfolge
+Die Skripte sind modular aufgebaut und idempotent: Bereits vorhandene Ressourcen werden erkannt und nicht überschrieben. Alle Erstellungsskripte unterstützen den Parameter -WhatIf zur gefahrlosen Vorschau von Änderungen.
 
-## Kosten und Aufraeumen
+1. Authentifizierung
+PowerShell
+.\00-connect-and-context.ps1 -ConfigPath .\config.local.ps1
+2. Infrastruktur-Aufbau
+PowerShell
+# 1. Ressourcengruppe
+.\01-resource-group.ps1 -ConfigPath .\config.local.ps1
 
-Azure berechnet manche Ressourcen auch dann weiter, wenn du sie nicht verwendest. Nach der Uebung loescht `.\99-cleanup-lab.ps1` die gesamte Ressourcengruppe inklusive aller enthaltenen Ressourcen. Fuehre es bewusst aus; es fragt wegen der hohen Auswirkung nochmals nach.
+# 2. Netzwerkinfrastruktur (VNet, Subnet, NSG)
+.\02-networking.ps1 -ConfigPath .\config.local.ps1
 
-## Troubleshooting (real aufgetretene Probleme)
+# 3. Storage Account
+.\03-storage.ps1 -ConfigPath .\config.local.ps1
 
-**"Resource ... was disallowed by Azure: The selected region is currently not accepting new customers" (403)**
-Manche Subscription-Typen (u.a. Free-Trial/Sponsorship) sind fuer bestimmte Regionen gesperrt. `westeurope` war betroffen, `germanywestcentral` funktionierte. Bei diesem Fehler in `config.local.ps1` einfach eine andere Region eintragen und die Ressourcengruppe neu aufbauen (`.\99-cleanup-lab.ps1` → `.\01-resource-group.ps1` → ...).
+# 4. RBAC Rollenzuweisung (Optional)
+.\04-identity-rbac.ps1 -ConfigPath .\config.local.ps1 -PrincipalObjectId '<Entra-Objekt-ID>' -Role Reader
 
-**Az-Module scheinen nach einem Neustart "verschwunden"**
-Windows PowerShell 5.1 (`Documents\WindowsPowerShell\Modules`) und PowerShell 7 (`Documents\PowerShell\Modules`) nutzen getrennte Modul-Pfade (`$env:PSModulePath`). Wenn eine Installation in der einen Shell erfolgte und das Skript spaeter in der anderen Shell laeuft, wirken die Module "fehlend", obwohl sie nur im falschen Pfad-Kontext nicht sichtbar sind. Schneller Check: `Get-Module -ListAvailable -Name Az.* | Measure-Object` sollte rund 90 Module zeigen; eine deutlich kleinere Zahl weist auf eine unvollstaendige Installation im aktuellen Shell-Kontext hin.
+# 5. Virtual Machine ohne öffentliche IP (Optional)
+.\05-virtual-machine.ps1 -ConfigPath .\config.local.ps1 -LocalAdminCredential (Get-Credential)
 
-## Lernbezug
+# 6. Monitoring & Log Analytics (Optional)
+.\06-monitoring.ps1 -ConfigPath .\config.local.ps1
+3. Kostenkontrolle & Clean-up
+Azure berechnet manche Ressourcen auch im Leerlauf. Nach Abschluss der Übungen löscht das Aufräumpskript die komplette Ressourcengruppe inklusive aller enthaltenen Komponenten:
 
-Die Dateien decken die Kernbereiche von AZ-104 ab: Identitaet/RBAC, Governance durch Tags und Ressourcengruppen, Storage, virtuelle Netzwerke, VMs sowie Monitoring. Fuer Themen wie Azure Policy, Backup, Load Balancer und Entra-Gruppen dienen sie als Ausgangspunkt und koennen nach derselben Struktur erweitert werden.
+PowerShell
+.\99-cleanup-lab.ps1 -ConfigPath .\config.local.ps1
+🛠️ Real-World Troubleshooting & Learnings
+Im Rahmen der Test-Deployments aufgetretene Hürden und deren operative Behebung:
+
+Error 403 / Regional Quota Restriction (westeurope):
+
+Problem: Bestimmte Subscription-Typen (z. B. Free-Trial oder Sponsorship) sperren Neuzuweisungen in stark ausgelasteten Regionen wie westeurope.
+
+Lösung: Konfiguration in config.local.ps1 flexibel auf germanywestcentral angepasst und die Ressourcengruppe neu aufgebaut.
+
+Fehlende Az-Module nach Shell-Wechsel:
+
+Problem: Windows PowerShell 5.1 (Documents\WindowsPowerShell\Modules) und PowerShell 7 (Documents\PowerShell\Modules) nutzen getrennte Modul-Pfade ($env:PSModulePath). Nach einem Wechsel der Shell-Umgebung schien das Az-Modul zu fehlen.
+
+Lösung: Überprüfung der verfügbaren Module im aktuellen Kontext mittels Get-Module -ListAvailable -Name Az.* | Measure-Object.
