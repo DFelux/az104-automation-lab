@@ -1,6 +1,6 @@
 # az104-automation-lab
 
-Idempotente PowerShell/Az-Skripte für eine AZ-104-Übungsumgebung in Azure – Resource Group, VNet, Storage, RBAC, VM (ohne öffentliche IP) und Monitoring. Mit `-WhatIf`-Unterstützung, Tagging und dokumentiertem Troubleshooting realer Azure-/PowerShell-Probleme.
+Idempotente PowerShell/Az-Skripte für eine AZ-104-Übungsumgebung in Azure – Resource Group, VNet, Storage, RBAC, VM (ohne öffentliche IP), NSG-Regeln und Monitoring. Mit `-WhatIf`-Unterstützung, Tagging und dokumentiertem Troubleshooting realer Azure-/PowerShell-Probleme.
 
 Diese Sammlung ist ein sicherer Ausgangspunkt fuer eine persoenliche AZ-104-Lernumgebung. Die Skripte sind absichtlich modular und wiederholbar: bereits vorhandene Ressourcen werden normalerweise nicht veraendert.
 
@@ -15,12 +15,14 @@ graph TD
     RG --> ST["Storage Account<br/>staz104labgwc001"]
     RG --> VM["VM (optional)<br/>vm-az104-lab-01<br/>keine öffentliche IP"]
     SNET --> VM
+    RG --> NSG["NSG (optional)<br/>via 08-nsg-rule.ps1<br/>z.B. AllowHttp, AllowSsh"]
+    NSG -. manuelle Zuweisung .-> SNET
     RG --> LAW["Log Analytics Workspace<br/>(optional)"]
     RG -. RBAC-Zuweisung .-> PRINCIPAL["Entra-Prinzipal<br/>(optional)"]
     RG -.-> PIP["Public IP (optional, eigenständig)<br/>via 07-public-ip.ps1<br/>nicht mit VM verbunden"]
 ```
 
-Alle Ressourcen liegen in derselben Resource Group und tragen ein einheitliches Tag-Set (`Project`, `Environment`, `Owner`, `Purpose`, `ManagedBy`). Die VM erhält bewusst keine öffentliche IP-Adresse; Zugriff erfolgt ausschließlich innerhalb des VNets bzw. optional per RBAC-Rollenzuweisung auf Ressourcengruppen-Ebene. Die Public-IP-Erstellung (`07-public-ip.ps1`) ist bewusst eigenständig gehalten und wird nicht automatisch an die VM angehängt – sie dient separaten Übungen (z.B. Bastion, Load Balancer, NAT Gateway).
+Alle Ressourcen liegen in derselben Resource Group und tragen ein einheitliches Tag-Set (`Project`, `Environment`, `Owner`, `Purpose`, `ManagedBy`). Die VM erhält bewusst keine öffentliche IP-Adresse; Zugriff erfolgt ausschließlich innerhalb des VNets bzw. optional per RBAC-Rollenzuweisung auf Ressourcengruppen-Ebene. Die Public-IP-Erstellung (`07-public-ip.ps1`) ist bewusst eigenständig gehalten und wird nicht automatisch an die VM angehängt – sie dient separaten Übungen (z.B. Bastion, Load Balancer, NAT Gateway). Die NSG (`08-nsg-rule.ps1`) wird bei Bedarf angelegt und mit Regeln befüllt, aber bewusst nicht automatisch einem Subnet oder einer NIC zugewiesen – das bleibt ein separater, einzeln zu übender Schritt.
 
 ## Einmal vorbereiten
 
@@ -40,6 +42,15 @@ Alle Skripte akzeptieren `-ConfigPath`; ohne Angabe wird die eingecheckte `confi
 5. Optional VM: `.\05-virtual-machine.ps1 -ConfigPath .\config.local.ps1 -LocalAdminCredential (Get-Credential)`
 6. Optional Monitoring: `.\06-monitoring.ps1 -ConfigPath .\config.local.ps1`
 7. Optional Public IP (eigenständig, z.B. für Bastion/Load Balancer-Übungen): `.\07-public-ip.ps1 -ConfigPath .\config.local.ps1 -PublicIpName "pip-test-01"`
+8. Optional NSG-Regeln (legt die NSG bei Bedarf an und fügt Regeln idempotent hinzu):
+   ```powershell
+   .\08-nsg-rule.ps1 -ConfigPath .\config.local.ps1 -NsgName "nsg-az104-lab-gwc" `
+       -RuleName "AllowHttp" -Priority 410 -DestinationPortRange 80 -DestinationAddressPrefix "10.10.1.4"
+
+   .\08-nsg-rule.ps1 -ConfigPath .\config.local.ps1 -NsgName "nsg-az104-lab-gwc" `
+       -RuleName "AllowSsh" -Priority 400 -DestinationPortRange 22 -DestinationAddressPrefix "10.10.1.4"
+   ```
+   Hinweis: `-SourceAddressPrefix "Internet"` ist der Default. Für eine echte SSH-Regel (Port 22) sollte die Quelle in der Praxis auf die eigene öffentliche IP oder Azure Bastion eingeschränkt werden statt auf `Internet` offen zu bleiben – im isolierten Lab ohne Public IP an der VM ist das Risiko gering, aber es lohnt sich, den Unterschied bewusst zu üben.
 
 Vorschau ohne Aenderungen: jedes Erstellungsskript mit `-WhatIf` aufrufen. Die VM erhaelt absichtlich **keine oeffentliche IP-Adresse**. Das vermeidet eine versehentlich direkt aus dem Internet erreichbare Lern-VM.
 
@@ -57,4 +68,4 @@ Windows PowerShell 5.1 (`Documents\WindowsPowerShell\Modules`) und PowerShell 7 
 
 ## Lernbezug
 
-Die Dateien decken die Kernbereiche von AZ-104 ab: Identitaet/RBAC, Governance durch Tags und Ressourcengruppen, Storage, virtuelle Netzwerke, VMs sowie Monitoring. Fuer Themen wie Azure Policy, Backup, Load Balancer und Entra-Gruppen dienen sie als Ausgangspunkt und koennen nach derselben Struktur erweitert werden.
+Die Dateien decken die Kernbereiche von AZ-104 ab: Identitaet/RBAC, Governance durch Tags und Ressourcengruppen, Storage, virtuelle Netzwerke, VMs, Netzwerksicherheit (NSG) sowie Monitoring. Fuer Themen wie Azure Policy, Backup, Load Balancer und Entra-Gruppen dienen sie als Ausgangspunkt und koennen nach derselben Struktur erweitert werden.
